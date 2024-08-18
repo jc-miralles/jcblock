@@ -1,0 +1,10 @@
+jcblock:
+  version: 1.x
+  css:
+    layout:
+      css/jcblock.css: {}
+  js:
+    js/jcblock.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings

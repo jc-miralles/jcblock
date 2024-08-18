@@ -1,0 +1,8 @@
+## YAML Template.
+name: CUSTOM EVENEMENTS
+description: Module Adimeo Test
+type: module
+core_version_requirement: ^8 || ^9 || ^10
+version: 10.x-0.0
+package: JC
+

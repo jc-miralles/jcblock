@@ -1,0 +1,32 @@
+<?php
+use Drupal\node\Entity\Node;
+use Drupal\Core\Datetime\DrupalDateTime ; 
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface ;
+/**
+ * Implements hook_cron().
+ */
+function jcblock_cron()
+{
+	\Drupal::logger('jcblock')->info('Tache cron dépublication nodes');
+
+	$date = new DrupalDateTime(); 
+	$date -> setTimezone(new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+	$date = $date->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+	
+	$qnodes = \Drupal::entityQuery('node')
+	->accessCheck(TRUE)
+	->condition('type', 'event')
+	->condition ('field_date_range.end_value',$date,'<')
+	->condition ('status',1 )
+	->execute();
+	
+	$c = count($qnodes);
+	if($c > 0){
+		$queue = \Drupal::service('queue')->get('module_jcblock_UnpublishPassedEvent');
+		$storage  = \Drupal::service('entity_type.manager')-> getStorage('node');
+		$nodes = $storage->loadMultiple($qnodes);
+		foreach($nodes as $nd){
+			$queue->createItem($nd);
+		}
+	}	
+}
