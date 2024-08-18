@@ -20,4 +20,4 @@ Heureusement l'excellent site adimeo.fr était là pour m'aider ;)
 J'ai bloqué pas mal de temps sur la création de l'objet $queue et ai fini par employer une autre méthode que celle utilisée sur le site adimeo, je ne suis pas certain de mon choix, j'espère que nous aurons l'occasion d'en discuter.
 
 ## Remarque
-Une fois la tache cron en place, le filtre *dont la date de fin n'est pas dépassée* sur les événements affichés dans le bloc n'est plus vraiment nécessaire :)
+Une fois la tache cron en place, le filtre *'dont la date de fin n'est pas dépassée'* sur les événements affichés dans le bloc n'est plus vraiment nécessaire :)
