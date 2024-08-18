@@ -2,17 +2,20 @@
 use Drupal\node\Entity\Node;
 use Drupal\Core\Datetime\DrupalDateTime ; 
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface ;
+
 /**
  * Implements hook_cron().
  */
 function jcblock_cron()
 {
+	// Inscription dans le journal du lancement de la tache cron
 	\Drupal::logger('jcblock')->info('Tache cron dépublication nodes');
-
+	// on créé une entité de type DrupalDateTime pour les querys
 	$date = new DrupalDateTime(); 
 	$date -> setTimezone(new DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
 	$date = $date->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
 	
+	// recherche des event encore publiés dont la date de fin est passée
 	$qnodes = \Drupal::entityQuery('node')
 	->accessCheck(TRUE)
 	->condition('type', 'event')
@@ -22,11 +25,25 @@ function jcblock_cron()
 	
 	$c = count($qnodes);
 	if($c > 0){
+		// si il existe des notes à dépublier alors je fait appel au QueueWorker
 		$queue = \Drupal::service('queue')->get('module_jcblock_UnpublishPassedEvent');
 		$storage  = \Drupal::service('entity_type.manager')-> getStorage('node');
 		$nodes = $storage->loadMultiple($qnodes);
 		foreach($nodes as $nd){
+			// je crée un élément dans la queue pour chaque node concerné.
 			$queue->createItem($nd);
 		}
 	}	
+}
+
+/**
+ * Implements hook_theme()
+ * Ajout du template nécessaire à l'affichage du block.
+ */
+function jcblock_theme($existing, $type, $theme, $path) {
+  return [
+    'jc_block_event' => [
+      'variables' => ['varnodes' => array()],
+    ],
+  ];
 }

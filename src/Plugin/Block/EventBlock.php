@@ -1,26 +1,10 @@
 <?php
-
 namespace Drupal\jcblock\Plugin\Block;
+
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Datetime\DrupalDateTime ; 
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface ;
 use Drupal\taxonomy\Entity\Term;
-
-/* use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Database\Database;
-use Drupal\Core\Database\Connection;
-use Drupal\Core\Session\AccountInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\node\Entity\Node;
-use Drupal\Core\Controller\ControllerBase;
-use Drupal\user\UserInterface;
-use Drupal\Core\Url;
-use Drupal\Core\Cache\Cache;
-use Drupal\file\Entity\File;
-use Drupal\media\Entity\Media;
-use Drupal\image\Entity\ImageStyle; */
 
 /**
  * Provides a 'Event' Block.
@@ -32,7 +16,8 @@ use Drupal\image\Entity\ImageStyle; */
  * )
  */
 class EventBlock extends BlockBase {
-	private function node2html($nd){
+	
+	private function node2array($nd){
 		// Extraction, composition des éléments à afficher 
 		// Arbitrairement titre, type et dates
 		$link = $nd->toUrl()->toString();
@@ -43,31 +28,35 @@ class EventBlock extends BlockBase {
 		$title = $nd->getTitle();
 		$dt1 = date('d/m/Y H:i',strtotime($dates["value"]));
 		$dt2 = date('d/m/Y H:i',strtotime($dates["end_value"]));
-		// Composition de l'élément à afficher 
-		$html = "<div class='link-block'>";
-		$html .= "<a href='$link'>$title</a>";
-		$html .= "<div class='term-block'>$term_name</div>";
-		$html .= "<div class='date-block'>$dt1 / $dt2</div>";
-		$html .= "</div>";
-		return $html;
+		return [
+			"title" => $title,
+			"link" => $link,
+			"term_name" => $term_name,
+			"dt1" => $dt1,
+			"dt2" => $dt2,
+		];
 	}
     /**
      * {@inheritdoc}
      */
     public function build() {
+		// Initialisation du tableau de variables à retourner au template
+		$varnodes = array();
 		// On cherche le node sur lequel on est
-        $n = \Drupal::routeMatch()->getParameter('node');
-        $nid = $n->id();
-        // on vérifie le tupe du node (même si à ce jour on n'a que des 'event'
-        $type = $n->bundle();
-		// On regarde quel est le type d'événement de ce node
-		$type_e = $n->get('field_event_type')->first()->getValue()['target_id'];
+        $node = \Drupal::routeMatch()->getParameter('node');
+		if ($node instanceof \Drupal\node\NodeInterface) {
+			$nid = $node->id();
+			// on vérifie le type du node (même si à ce jour on n'a que des 'event')
+			$type = $node->bundle();
+			// On regarde quel est le type d'événement de ce node
+			$type_e = $node->get('field_event_type')->first()->getValue()['target_id'];
+		}else{
+			$type = "not a node";
+		}
         // on filtre sur le type de note 'event'
 		// On peut également procéder à ce filtre dans l'affichage du block en front mais si par la suite on ajoute un type de contenu on va éviter d'entrer dans ce processus.
         if($type == 'event'){
-			// $html est le code qu'on va envoyer au block
-			$html = "";
-			
+					
 			$storage  = \Drupal::service( 'entity_type.manager' )-> getStorage( 'node' );
 			
 			// on créé une entité de type DrupalDateTime pour les querys
@@ -86,14 +75,17 @@ class EventBlock extends BlockBase {
 			->sort ( 'field_date_range.value','ASC')
 			->range(0, 3)
 			->execute();
+			
 			$c = count($qnodes);
+			
 			if($c > 0){
 				$nodes = $storage->loadMultiple($qnodes);
 				foreach($nodes as $nd){
-					// je "construit" les éléments du dom à partir du node
-					$html .= $this->node2html($nd);
+					// je récupère les variables à partir du node
+					$varnodes[] = $this->node2array($nd);
 				}
 			}
+			// Si on a moins que 3 nodes du même type à afficher
 			if($c < 3){
 				$r = 3 - $c;
 				// Seconde requête : les nodes d'un autre type, dont la date de fin  n'est pas passée (max 3 moins les nodes précédents)
@@ -110,24 +102,23 @@ class EventBlock extends BlockBase {
 				if($c2 > 0){
 					$nodes = $storage->loadMultiple($qnodes2);
 					foreach($nodes as $nd){
-						// je "construit" les éléments du dom à partir du node
-						$html .= $this->node2html($nd);
+						// je récupère les variables à partir du node
+						$varnodes[] = $this->node2array($nd);
 					}
 				}
 			}
 		}
-		
-        return [
-            '#markup' => $html,
-			'#cache' => [
-                'max-age' => 0,
-            ],
-			'#attached' => array(
+		// Appel du template avec injection des variables récupérées.
+		// Attachement de la librairie du module pour un design éventuel via la feuille de style 
+		return [
+		  '#theme' => 'jc_block_event',
+		  '#varnodes' => $varnodes,
+		  '#attached' => array(
 				'library' => array(
 				  'jcblock/jcblock',
 				),
 			  ),
-        ];
+		];
     }
 
 }

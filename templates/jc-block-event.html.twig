@@ -1,0 +1,8 @@
+{# Template appelé dans le pluggin EventBlock #}
+{% for var in varnodes %}
+<div class="link-block">
+	<a href="{{ var.link }}">{{ var.title }}</a>
+	<div class='term-block'>{{ var.term_name }}</div>
+	<div class='date-block'>Du {{ var.dt1 }} au {{ var.dt2 }}</div>
+</div>
+{% endfor %}

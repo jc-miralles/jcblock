@@ -37,7 +37,9 @@ class UnpublishPassedEvent extends QueueWorkerBase implements ContainerFactoryPl
    * {@inheritdoc}
    */
   public function processItem($node) {
+	// Je dépublie simplement le node passé en paramétre
 	$node->set('status', 0);
+	// je ne récupère le titre que pour le journal 
 	$title = $node->getTitle();
 	$node->save();
 	$text = "Evénements $title dépubliés";
